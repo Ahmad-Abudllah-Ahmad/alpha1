@@ -1,0 +1,19 @@
+# Render — ADICC platform shell (TopNav + Estimation iframe → OpenTakeoff)
+# OpenTakeoff stays on https://adicc.onrender.com; this service proxies /takeoff.
+
+services:
+  - type: web
+    name: adicc-platform
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start -- -H 0.0.0.0 -p $PORT
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Same-origin embed via Next rewrites (see next.config.ts)
+      - key: NEXT_PUBLIC_OPENTAKEOFF_URL
+        value: /takeoff/
+      - key: OPENTAKEOFF_ORIGIN
+        value: https://adicc.onrender.com

@@ -1,0 +1,50 @@
+{
+    "name": "adicc-ai-platform",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "node scripts/clean-next-cache.mjs && next dev",
+        "dev:clean": "node scripts/clean-next-cache.mjs && next dev",
+        "dev:fast": "next dev",
+        "prebuild": "node scripts/clean-next-cache.mjs",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "@huggingface/transformers": "^4.2.0",
+        "@mlightcad/libredwg-web": "^0.7.9",
+        "@radix-ui/react-scroll-area": "^1.2.2",
+        "@radix-ui/react-separator": "^1.1.1",
+        "@radix-ui/react-slot": "^1.1.1",
+        "@radix-ui/react-switch": "^1.1.2",
+        "@radix-ui/react-tabs": "^1.1.2",
+        "@supabase/supabase-js": "^2.112.0",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "dxf-parser": "^1.1.2",
+        "fflate": "^0.8.3",
+        "jspdf": "^4.2.1",
+        "lucide-react": "^0.469.0",
+        "next": "^15.1.0",
+        "pdf-lib": "^1.17.1",
+        "pdfjs-dist": "^4.10.38",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-router-dom": "^7.18.2",
+        "recharts": "^2.15.0",
+        "tailwind-merge": "^2.6.0",
+        "tesseract.js": "^5.1.1"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "autoprefixer": "^10.4.20",
+        "eslint": "^9.17.0",
+        "eslint-config-next": "^15.1.0",
+        "postcss": "^8.4.49",
+        "tailwindcss": "^3.4.17",
+        "typescript": "^5.7.0"
+    }
+}
