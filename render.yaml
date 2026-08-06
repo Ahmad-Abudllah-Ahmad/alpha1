@@ -6,14 +6,14 @@ services:
     name: adicc-platform
     runtime: node
     plan: starter
-    buildCommand: npm ci && npm run build
-    startCommand: npm start -- -H 0.0.0.0 -p $PORT
+    buildCommand: npm install && npm run build
+    startCommand: npx next start -H 0.0.0.0 -p $PORT
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
         value: "22"
-      # Same-origin embed via Next rewrites (see next.config.ts)
+      # Direct embed of the live OpenTakeoff static site (assets at site root).
       - key: NEXT_PUBLIC_OPENTAKEOFF_URL
-        value: /takeoff/
+        value: https://adicc.onrender.com/
       - key: OPENTAKEOFF_ORIGIN
         value: https://adicc.onrender.com
