@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -30,6 +30,51 @@ import { brand } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, FileUp, UploadCloud } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+function BlurReveal({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setShown(true);
+      return;
+    }
+    let timer: number | undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        io.unobserve(el);
+        timer = window.setTimeout(() => {
+          requestAnimationFrame(() => setShown(true));
+        }, delay);
+      },
+      { threshold: 0.06, rootMargin: "0px 0px -4% 0px" }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [delay]);
+
+  return (
+    <div ref={ref} className={cn("blur-reveal", shown && "blur-reveal-in", className)}>
+      {children}
+    </div>
+  );
+}
 
 const P50_DATE = new Date("2026-01-15").getTime();
 const P70_DATE = new Date("2026-02-10").getTime();
@@ -109,10 +154,11 @@ export default function ScheduleRiskDashboard() {
   }, []);
 
   return (
-    <div className="space-y-4">
+    <div className="animate-dashboard-pop space-y-4">
       {/* Primavera P6 Import + Milestone Health */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <BlurReveal delay={0} className="h-full lg:col-span-1">
+        <Card className="h-full">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Primavera P6 Import</CardTitle>
@@ -154,8 +200,10 @@ export default function ScheduleRiskDashboard() {
             </label>
           </CardContent>
         </Card>
+        </BlurReveal>
 
-        <Card className="lg:col-span-2">
+        <BlurReveal delay={160} className="h-full lg:col-span-2">
+        <Card className="h-full">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Milestone Health Dashboard</CardTitle>
@@ -199,9 +247,11 @@ export default function ScheduleRiskDashboard() {
             </div>
           </CardContent>
         </Card>
+        </BlurReveal>
       </div>
 
       {/* Baseline vs Actual */}
+      <BlurReveal delay={80}>
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
@@ -245,9 +295,11 @@ export default function ScheduleRiskDashboard() {
           </div>
         </CardContent>
       </Card>
+      </BlurReveal>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 items-stretch">
-        <Card className="flex flex-col h-full">
+        <BlurReveal delay={0} className="h-full">
+        <Card className="flex h-full flex-col">
           <CardHeader>
             <CardTitle>Schedule Simulation & Completion Forecast</CardTitle>
             <CardDescription>
@@ -311,8 +363,10 @@ export default function ScheduleRiskDashboard() {
             </div>
           </CardContent>
         </Card>
+        </BlurReveal>
 
-        <Card className="flex flex-col h-full">
+        <BlurReveal delay={160} className="h-full">
+        <Card className="flex h-full flex-col">
           <CardHeader>
             <CardTitle>Delay Drivers (Critical Path)</CardTitle>
             <CardDescription>
@@ -343,8 +397,10 @@ export default function ScheduleRiskDashboard() {
             </div>
           </CardContent>
         </Card>
+        </BlurReveal>
       </div>
 
+      <BlurReveal delay={100}>
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Primavera P6 Delay Risk Log</CardTitle>
@@ -386,7 +442,9 @@ export default function ScheduleRiskDashboard() {
           </div>
         </CardContent>
       </Card>
+      </BlurReveal>
 
+      <BlurReveal delay={200}>
       <Card>
         <CardContent className="pt-6">
           <div className="rounded-xl border bg-gradient-to-br from-muted/30 to-background p-4 text-xs space-y-3">
@@ -400,6 +458,7 @@ export default function ScheduleRiskDashboard() {
           </div>
         </CardContent>
       </Card>
+      </BlurReveal>
     </div>
   );
 }

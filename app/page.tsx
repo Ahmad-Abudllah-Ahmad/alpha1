@@ -69,12 +69,6 @@ function AppContent() {
             </ViewFade>
           </div>
 
-          <footer className="w-full border-t border-border/50 pt-3">
-            <div className="flex flex-col items-center justify-between gap-2 text-center sm:flex-row">
-              <p className="text-xs text-muted-foreground">© 2026 ADICC · All rights reserved</p>
-              <p className="text-xs text-muted-foreground">Abu Dhabi · Since 1989</p>
-            </div>
-          </footer>
         </div>
       </main>
     </div>

@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { ModuleId } from "@/lib/modules";
+import AdiccLoadingLogo from "@/components/AdiccLoadingLogo";
 
 interface SkeletonProps {
   className?: string;
@@ -117,48 +118,12 @@ export function SkeletonBanner() {
 
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-4" aria-busy="true" aria-label="Loading dashboard">
-      <SkelCard>
-        <div className="space-y-3 p-4">
-          <Skeleton className="h-3 w-40" />
-          <Skeleton className="h-7 w-64 max-w-full" />
-          <Skeleton className="h-4 w-80 max-w-full" />
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Skeleton className="h-9 w-28 rounded-lg" />
-            <Skeleton className="h-9 w-32 rounded-lg" />
-            <Skeleton className="h-9 w-28 rounded-lg" />
-          </div>
-        </div>
-      </SkelCard>
-      <SkeletonKpiRow />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <SkeletonChart className="lg:col-span-2" height="h-44 sm:h-48" />
-        <SkeletonChart height="h-44 sm:h-48" />
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SkeletonChart height="h-40 sm:h-44" />
-        <SkeletonChart height="h-40 sm:h-44" />
-      </div>
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <SkelCard>
-            <div className="space-y-3 p-4">
-              <Skeleton className="h-4 w-32" />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-28 rounded-xl" />
-                ))}
-              </div>
-            </div>
-          </SkelCard>
-        </div>
-        <SkelCard>
-          <div className="space-y-3 p-4">
-            <Skeleton className="h-4 w-28" />
-            <SkeletonList items={5} />
-          </div>
-        </SkelCard>
-      </div>
+    <div
+      className="flex w-full min-h-[calc(100svh-7.5rem)] flex-col items-center justify-center"
+      aria-busy="true"
+      aria-label="Loading dashboard"
+    >
+      <AdiccLoadingLogo />
     </div>
   );
 }
@@ -200,14 +165,12 @@ export function EstimationSkeleton() {
 
 export function ScheduleSkeleton() {
   return (
-    <div className="space-y-4" aria-busy="true" aria-label="Loading schedule">
-      <Skeleton className="h-32 w-full rounded-xl border border-dashed" />
-      <SkeletonKpiRow count={3} />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SkeletonChart height="h-56" />
-        <SkeletonChart height="h-56" />
-      </div>
-      <SkeletonTable rows={4} cols={5} />
+    <div
+      className="flex w-full min-h-[calc(100svh-7.5rem)] flex-col items-center justify-center"
+      aria-busy="true"
+      aria-label="Loading schedule"
+    >
+      <AdiccLoadingLogo />
     </div>
   );
 }

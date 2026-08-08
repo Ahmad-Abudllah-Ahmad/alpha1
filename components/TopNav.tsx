@@ -12,7 +12,7 @@ import { useNotifications } from "@/components/NotificationProvider";
 import { modules, type ModuleId } from "@/lib/modules";
 import { canViewModule } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
-import { Bell, Database, Search } from "lucide-react";
+import { Bell, ChevronLeft, Database, Search } from "lucide-react";
 
 export type { ModuleId };
 export { modules };
@@ -22,16 +22,65 @@ interface TopNavProps {
   onChange: (id: ModuleId) => void;
 }
 
+type RecentProjectHit = {
+  id: string;
+  name: string;
+  sheetCount?: number;
+  shapeCount?: number;
+};
+
 export function TopNav({ active, onChange }: TopNavProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const tabBtnRefs = useRef(new Map<string, HTMLButtonElement>());
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, top: 0, height: 0 });
+  const [projectQuery, setProjectQuery] = useState("");
+  const [recentProjects, setRecentProjects] = useState<RecentProjectHit[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = sessionStorage.getItem("adicc:recent-projects");
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [sheetsViewActive, setSheetsViewActive] = useState(false);
   const { role } = useRole();
   const { toggle: toggleKb, online, docCount } = useKnowledgeBase();
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
   const visibleModules = modules.filter((m) => canViewModule(role, m.id));
+
+  const projectHits = recentProjects
+    .filter((p) => !projectQuery.trim() || p.name.toLowerCase().includes(projectQuery.trim().toLowerCase()))
+    .slice(0, 8);
+
+  const pushProjectSearch = useCallback((query: string) => {
+    window.dispatchEvent(new CustomEvent("adicc:project-search", { detail: query }));
+  }, []);
+
+  const openRecentProject = useCallback((p: RecentProjectHit) => {
+    setProjectQuery(p.name);
+    setSearchOpen(false);
+    onChange("estimation");
+    window.dispatchEvent(new CustomEvent("adicc:opentakeoff-home"));
+    // Allow Estimation iframe to mount / return home before opening.
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("adicc:open-project", { detail: { id: p.id, name: p.name } }));
+    }, 220);
+  }, [onChange]);
+
+  const goAllProjects = useCallback(() => {
+    setSheetsViewActive(false);
+    onChange("estimation");
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("adicc:opentakeoff-home"));
+    }, 220);
+  }, [onChange]);
 
   const measureIndicator = useCallback(() => {
     const btn = tabBtnRefs.current.get(active);
@@ -39,7 +88,12 @@ export function TopNav({ active, onChange }: TopNavProps) {
     if (!btn || !row) return;
     const rr = row.getBoundingClientRect();
     const br = btn.getBoundingClientRect();
-    setIndicator({ left: br.left - rr.left + row.scrollLeft, width: br.width });
+    setIndicator({
+      left: br.left - rr.left + row.scrollLeft,
+      width: br.width,
+      top: br.top - rr.top,
+      height: br.height,
+    });
   }, [active]);
 
   useLayoutEffect(() => {
@@ -61,18 +115,55 @@ export function TopNav({ active, onChange }: TopNavProps) {
   }, [measureIndicator]);
 
   useEffect(() => {
-    if (!showNotifications) return;
+    const onList = (e: Event) => {
+      const detail = (e as CustomEvent<RecentProjectHit[]>).detail;
+      if (!Array.isArray(detail)) return;
+      setRecentProjects(detail);
+      try {
+        sessionStorage.setItem("adicc:recent-projects", JSON.stringify(detail));
+      } catch { /* private mode */ }
+    };
+    window.addEventListener("adicc:project-list", onList as EventListener);
+    return () => window.removeEventListener("adicc:project-list", onList as EventListener);
+  }, []);
 
-    const close = () => setShowNotifications(false);
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data;
+      if (!d || d.source !== "opentakeoff" || d.type !== "adicc:sheets-view") return;
+      setSheetsViewActive(!!d.active);
+    };
+    const onHome = () => setSheetsViewActive(false);
+    window.addEventListener("message", onMessage);
+    window.addEventListener("adicc:opentakeoff-home", onHome);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("adicc:opentakeoff-home", onHome);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (active !== "estimation") setSheetsViewActive(false);
+  }, [active]);
+
+  useEffect(() => {
+    if (!showNotifications && !searchOpen) return;
 
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Node)) return;
-      if (!notificationsRef.current?.contains(target)) close();
+      if (showNotifications && !notificationsRef.current?.contains(target)) setShowNotifications(false);
+      const inSearch =
+        searchRef.current?.contains(target)
+        || mobileSearchRef.current?.contains(target);
+      if (searchOpen && !inSearch) setSearchOpen(false);
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key === "Escape") {
+        setShowNotifications(false);
+        setSearchOpen(false);
+      }
     };
 
     document.addEventListener("pointerdown", onPointerDown);
@@ -81,21 +172,139 @@ export function TopNav({ active, onChange }: TopNavProps) {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [showNotifications]);
+  }, [showNotifications, searchOpen]);
 
   return (
     <>
       <header className="sticky top-0 z-20 glass border-b border-border/60">
         <div className="mx-auto w-full px-3 py-2">
-          {/* 3-zone flex — no absolute overlap */}
-          <nav className="flex items-center gap-2 sm:gap-3">
-            <div className="flex shrink-0 items-center">
+          {/* Logo · modules (center) · utilities — equal side columns keep tabs centered */}
+          <nav className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
+            <div className="flex min-w-0 items-center justify-self-start gap-2">
               <button type="button" onClick={() => onChange("dashboard")} aria-label="ADICC home">
                 <AdiccLogo />
               </button>
+              {sheetsViewActive && (
+                <button
+                  type="button"
+                  onClick={goAllProjects}
+                  title="Back to all projects"
+                  className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-transparent px-2.5 py-1.5 text-xs font-medium text-muted-foreground whitespace-nowrap transition-colors hover:bg-muted/50 hover:text-foreground"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
+                  All projects
+                </button>
+              )}
             </div>
 
-            <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+            <div
+              ref={tabsRef}
+              className="scrollbar-none relative flex max-w-[min(100vw-12rem,42rem)] items-center justify-center gap-0.5 overflow-x-auto px-3 sm:gap-1"
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute z-0 rounded-t-xl rounded-b-none bg-[#455a64] transition-[left,width,top,height,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+                style={{
+                  left: indicator.left,
+                  width: indicator.width,
+                  top: indicator.top,
+                  height: indicator.height,
+                  opacity: indicator.width > 0 ? 1 : 0,
+                }}
+              >
+                <svg
+                  aria-hidden
+                  viewBox="0 0 12 12"
+                  className="absolute bottom-0 left-0 h-3 w-3 -translate-x-full"
+                  fill="#455a64"
+                >
+                  <path d="M12 0v12H0c6.627 0 12-5.373 12-12z" />
+                </svg>
+                <svg
+                  aria-hidden
+                  viewBox="0 0 12 12"
+                  className="absolute bottom-0 right-0 h-3 w-3 translate-x-full"
+                  fill="#455a64"
+                >
+                  <path d="M0 0v12h12C5.373 12 0 6.627 0 0z" />
+                </svg>
+              </span>
+              {visibleModules.map((mod) => {
+                const Icon = mod.icon;
+                const isActive = active === mod.id;
+                return (
+                  <button
+                    key={mod.id}
+                    ref={(el) => {
+                      if (el) tabBtnRefs.current.set(mod.id, el);
+                      else tabBtnRefs.current.delete(mod.id);
+                    }}
+                    type="button"
+                    onClick={() => onChange(mod.id)}
+                    className={cn(
+                      "relative z-[1] flex shrink-0 snap-start items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:gap-2 sm:px-3",
+                      isActive
+                        ? "bg-transparent text-white hover:bg-transparent hover:text-white"
+                        : "bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="hidden md:inline">{mod.label}</span>
+                    <span className="md:hidden">{mod.short}</span>
+                    {mod.status === "preview" && (
+                      <Badge variant="preview" className="ml-0.5 hidden h-4 px-1 text-[8px] xl:inline-flex">
+                        Preview
+                      </Badge>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex min-w-0 shrink-0 items-center justify-self-end gap-1 sm:gap-1.5">
+              <div className="relative hidden w-[min(15rem,30vw)] min-w-[9rem] sm:block lg:w-60" ref={searchRef}>
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 z-[1] h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={projectQuery}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setProjectQuery(next);
+                    setSearchOpen(true);
+                    pushProjectSearch(next);
+                  }}
+                  onFocus={() => setSearchOpen(true)}
+                  placeholder="Search projects…"
+                  className="h-9 w-full border-border/70 bg-background/80 pl-8 text-sm shadow-none"
+                  aria-label="Search recent projects"
+                  aria-expanded={searchOpen}
+                  aria-haspopup="listbox"
+                />
+                {searchOpen && projectQuery.trim() && (
+                  <div
+                    role="listbox"
+                    className="absolute right-0 top-10 z-50 w-[min(20rem,calc(100vw-1.5rem))] animate-in fade-in slide-in-from-top-2 rounded-xl border bg-card p-1.5 shadow-elevated duration-150"
+                  >
+                    {projectHits.length === 0 ? (
+                      <p className="px-2.5 py-3 text-center text-xs text-muted-foreground">No projects match</p>
+                    ) : (
+                      projectHits.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          role="option"
+                          onClick={() => openRecentProject(p)}
+                          className="flex w-full flex-col rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-primary/5"
+                        >
+                          <span className="truncate text-xs font-semibold text-foreground">{p.name}</span>
+                          <span className="mt-0.5 text-[10px] text-muted-foreground">
+                            {p.sheetCount || 0} sheets · {p.shapeCount || 0} items
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
               <ThemeToggle />
               <div className="relative" ref={notificationsRef}>
                 <button
@@ -166,60 +375,48 @@ export function TopNav({ active, onChange }: TopNavProps) {
         </div>
       </header>
 
-      {/* Module tabs — wrap on xl, scroll (no ugly bar) on smaller */}
-      <div className="sticky top-[57px] z-10 border-b border-border/60 bg-background/95 backdrop-blur-sm">
-        <div className="mx-auto w-full px-2 py-1.5">
-          <div
-            ref={tabsRef}
-            className="scrollbar-none relative flex items-center justify-start gap-0.5 overflow-x-auto xl:flex-wrap xl:justify-center xl:overflow-visible xl:gap-1"
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute bottom-0 h-0.5 rounded-full gradient-primary transition-[left,width] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
-              style={{ left: indicator.left, width: indicator.width }}
-            />
-            {visibleModules.map((mod) => {
-              const Icon = mod.icon;
-              const isActive = active === mod.id;
-              return (
-                <button
-                  key={mod.id}
-                  ref={(el) => {
-                    if (el) tabBtnRefs.current.set(mod.id, el);
-                    else tabBtnRefs.current.delete(mod.id);
-                  }}
-                  type="button"
-                  onClick={() => onChange(mod.id)}
-                  className={cn(
-                    "relative flex shrink-0 snap-start items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 sm:gap-2 sm:px-3",
-                    isActive
-                      ? "bg-primary/10 text-primary shadow-xs"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="hidden md:inline">{mod.label}</span>
-                  <span className="md:hidden">{mod.short}</span>
-                  {mod.status === "preview" && (
-                    <Badge variant="preview" className="ml-0.5 hidden h-4 px-1 text-[8px] xl:inline-flex">
-                      Preview
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile / tablet search row — below tabs, never overlaps header actions */}
-      <div className="border-b border-border/40 bg-background/80 px-3 py-2 lg:hidden">
-        <div className="mx-auto w-full px-3 py-1.5">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      {/* Compact search under header on very small screens */}
+      <div className="border-b border-border/40 bg-background/80 px-3 py-2 sm:hidden" ref={mobileSearchRef}>
+        <div className="relative mx-auto w-full">
+          <Search className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search projects, drawings, clauses..."
+            value={projectQuery}
+            onChange={(e) => {
+              const next = e.target.value;
+              setProjectQuery(next);
+              setSearchOpen(true);
+              pushProjectSearch(next);
+            }}
+            onFocus={() => setSearchOpen(true)}
+            placeholder="Search projects…"
             className="h-9 w-full border-border/80 pl-10 shadow-xs"
+            aria-label="Search recent projects"
           />
+          {searchOpen && projectQuery.trim() && (
+            <div
+              role="listbox"
+              className="absolute left-3 right-3 top-11 z-50 animate-in fade-in slide-in-from-top-2 rounded-xl border bg-card p-1.5 shadow-elevated duration-150"
+            >
+              {projectHits.length === 0 ? (
+                <p className="px-2.5 py-3 text-center text-xs text-muted-foreground">No projects match</p>
+              ) : (
+                projectHits.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="option"
+                    onClick={() => openRecentProject(p)}
+                    className="flex w-full flex-col rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-primary/5"
+                  >
+                    <span className="truncate text-xs font-semibold text-foreground">{p.name}</span>
+                    <span className="mt-0.5 text-[10px] text-muted-foreground">
+                      {p.sheetCount || 0} sheets · {p.shapeCount || 0} items
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>

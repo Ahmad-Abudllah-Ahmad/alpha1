@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Calculator, LayoutDashboard, TrendingUp } from "lucide-react";
+import { CalendarClock, Gauge, PencilRuler } from "lucide-react";
 
 export type ModuleId = "dashboard" | "estimation" | "schedule" | "contracts" | "docbot";
 
@@ -10,7 +10,7 @@ export const modules: {
   icon: ComponentType<{ className?: string }>;
   status: "functional" | "preview";
 }[] = [
-  { id: "dashboard", label: "Executive Dashboard", short: "Dashboard", icon: LayoutDashboard, status: "functional" },
-  { id: "estimation", label: "Estimation & Takeoff", short: "Takeoff", icon: Calculator, status: "functional" },
-  { id: "schedule", label: "Scheduling & Controls", short: "Schedule", icon: TrendingUp, status: "functional" },
+  { id: "dashboard", label: "Executive Dashboard", short: "Dashboard", icon: Gauge, status: "functional" },
+  { id: "estimation", label: "Estimation & Takeoff", short: "Takeoff", icon: PencilRuler, status: "functional" },
+  { id: "schedule", label: "Scheduling & Controls", short: "Schedule", icon: CalendarClock, status: "functional" },
 ];

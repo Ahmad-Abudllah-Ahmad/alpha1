@@ -73,32 +73,17 @@ export function ProjectDetailView({ store, projectId, rates, onBack, onOpenFloor
 
   return (
     <div className="space-y-4">
-      <div className="surface-card px-2.5 py-1.5">
-        <div className="flex min-w-0 items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-ml-1.5 h-6 shrink-0 px-1.5 text-[11px] text-muted-foreground"
-            onClick={onBack}
-          >
-            <ArrowLeft className="h-3 w-3" /> All projects
-          </Button>
-          <span className="text-muted-foreground/40">/</span>
-          <h2 className="min-w-0 truncate text-sm font-semibold leading-none tracking-[-0.02em] text-foreground">
-            {project.name}
-          </h2>
-          {project.approvedAt && (
+      {project.approvedAt && (
+        <div className="surface-card px-2.5 py-1.5">
+          <div className="flex min-w-0 items-center gap-2">
             <Badge variant="success" className="gap-1 text-[9px]">
               <ShieldCheck className="h-2.5 w-2.5" />
               Approved {new Date(project.approvedAt).toLocaleDateString()}
               {project.approvedBy ? ` · ${project.approvedBy}` : ""}
             </Badge>
-          )}
-          <p className="ml-auto hidden truncate text-[11px] text-muted-foreground sm:block">
-            {[project.client, project.location].filter(Boolean).join(" · ") || "No client / location set"}
-          </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {boq.uncalibratedFloors > 0 && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
@@ -122,7 +107,7 @@ export function ProjectDetailView({ store, projectId, rates, onBack, onOpenFloor
           </CardContent>
         </Card>
       ) : (
-        <OpenTakeoffEmbed className="relative min-h-[560px] w-full overflow-hidden rounded-xl border bg-neutral-950 lg:min-h-[calc(100vh-14rem)]" />
+        <OpenTakeoffEmbed className="relative min-h-[560px] w-full overflow-hidden rounded-xl border bg-neutral-950 lg:min-h-[calc(100dvh-5.25rem)]" />
       )}
 
       {/* Rate card & custom items editor */}

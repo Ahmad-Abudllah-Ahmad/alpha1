@@ -24,12 +24,12 @@
     --input: 195 18% 88%;
     --ring: 193 100% 20%;
     --radius: 0.75rem;
-    --gold: 38 72% 48%;
-    --gold-foreground: 38 90% 14%;
+    --gold: 189 43% 42%;
+    --gold-foreground: 189 55% 16%;
     --chart-1: 193 100% 20%;
     --chart-2: 193 70% 32%;
     --chart-3: 193 45% 52%;
-    --chart-4: 38 72% 48%;
+    --chart-4: 189 43% 42%;
     --chart-5: 27 87% 55%;
     --sidebar: 195 22% 96%;
     --sidebar-foreground: 195 35% 11%;
@@ -55,12 +55,12 @@
     --border: 195 14% 16%;
     --input: 195 14% 16%;
     --ring: 193 55% 44%;
-    --gold: 38 65% 52%;
-    --gold-foreground: 38 90% 90%;
+    --gold: 189 40% 55%;
+    --gold-foreground: 189 30% 92%;
     --chart-1: 193 55% 44%;
     --chart-2: 193 45% 55%;
     --chart-3: 193 35% 65%;
-    --chart-4: 38 65% 52%;
+    --chart-4: 189 40% 55%;
     --chart-5: 340 65% 55%;
     --sidebar: 195 22% 3%;
     --sidebar-foreground: 40 15% 96%;
@@ -113,7 +113,7 @@
   }
 
   .gradient-gold {
-    background: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(32 80% 42%) 100%);
+    background: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(193 55% 32%) 100%);
   }
 
   .glass {
@@ -176,10 +176,53 @@
     animation: tab-enter 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
+  @keyframes dashboard-pop {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.988);
+      filter: blur(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  .animate-dashboard-pop {
+    animation: dashboard-pop 820ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .blur-reveal {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(16px) scale(0.985);
+    transition:
+      opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 1.05s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, filter, transform;
+  }
+
+  .blur-reveal-in {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-view-enter,
-    .animate-tab-enter {
+    .animate-tab-enter,
+    .animate-dashboard-pop {
       animation: none;
+    }
+
+    .blur-reveal,
+    .blur-reveal-in {
+      opacity: 1;
+      filter: none;
+      transform: none;
+      transition: none;
     }
   }
 }
