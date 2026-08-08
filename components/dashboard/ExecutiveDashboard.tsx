@@ -351,10 +351,12 @@ function KpiCard({
                       const p = payload[0];
                       const rect = chartRef.current.getBoundingClientRect();
                       const tipW = 128;
-                      const rawLeft = rect.left + coordinate.x + 14;
+                      const cx = coordinate.x ?? 0;
+                      const cy = coordinate.y ?? 0;
+                      const rawLeft = rect.left + cx + 14;
                       const flipX = rawLeft + tipW > window.innerWidth - 8;
-                      const left = flipX ? rect.left + coordinate.x - 14 : rawLeft;
-                      const top = Math.max(8, rect.top + coordinate.y - 10);
+                      const left = flipX ? rect.left + cx - 14 : rawLeft;
+                      const top = Math.max(8, rect.top + cy - 10);
                       return createPortal(
                         <div
                           className="pointer-events-none fixed z-[200] rounded-md border border-border/80 bg-popover px-2 py-1 shadow-md"
