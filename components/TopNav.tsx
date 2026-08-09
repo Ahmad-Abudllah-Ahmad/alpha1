@@ -36,7 +36,7 @@ export function TopNav({ active, onChange }: TopNavProps) {
   const mobileSearchRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const tabBtnRefs = useRef(new Map<string, HTMLButtonElement>());
-  const [indicator, setIndicator] = useState({ left: 0, width: 0, top: 0, height: 0 });
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const [projectQuery, setProjectQuery] = useState("");
   const [recentProjects, setRecentProjects] = useState<RecentProjectHit[]>(() => {
     if (typeof window === "undefined") return [];
@@ -91,8 +91,6 @@ export function TopNav({ active, onChange }: TopNavProps) {
     setIndicator({
       left: br.left - rr.left + row.scrollLeft,
       width: br.width,
-      top: br.top - rr.top,
-      height: br.height,
     });
   }, [active]);
 
@@ -199,16 +197,14 @@ export function TopNav({ active, onChange }: TopNavProps) {
 
             <div
               ref={tabsRef}
-              className="scrollbar-none relative flex max-w-[min(100vw-12rem,42rem)] items-center justify-center gap-0.5 overflow-x-auto px-3 sm:gap-1"
+              className="scrollbar-none relative -mb-[calc(0.5rem+1px)] flex max-w-[min(100vw-12rem,42rem)] items-center justify-center gap-0.5 self-end overflow-x-auto px-3 pb-[calc(0.5rem+1px)] sm:gap-1"
             >
               <span
                 aria-hidden
-                className="pointer-events-none absolute z-0 rounded-t-xl rounded-b-none bg-[#455a64] transition-[left,width,top,height,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+                className="pointer-events-none absolute inset-y-0 z-0 rounded-t-xl rounded-b-none bg-[#dbe3e6] transition-[left,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
                 style={{
                   left: indicator.left,
                   width: indicator.width,
-                  top: indicator.top,
-                  height: indicator.height,
                   opacity: indicator.width > 0 ? 1 : 0,
                 }}
               >
@@ -216,7 +212,7 @@ export function TopNav({ active, onChange }: TopNavProps) {
                   aria-hidden
                   viewBox="0 0 12 12"
                   className="absolute bottom-0 left-0 h-3 w-3 -translate-x-full"
-                  fill="#455a64"
+                  fill="#dbe3e6"
                 >
                   <path d="M12 0v12H0c6.627 0 12-5.373 12-12z" />
                 </svg>
@@ -224,7 +220,7 @@ export function TopNav({ active, onChange }: TopNavProps) {
                   aria-hidden
                   viewBox="0 0 12 12"
                   className="absolute bottom-0 right-0 h-3 w-3 translate-x-full"
-                  fill="#455a64"
+                  fill="#dbe3e6"
                 >
                   <path d="M0 0v12h12C5.373 12 0 6.627 0 0z" />
                 </svg>
@@ -242,10 +238,10 @@ export function TopNav({ active, onChange }: TopNavProps) {
                     type="button"
                     onClick={() => onChange(mod.id)}
                     className={cn(
-                      "relative z-[1] flex shrink-0 snap-start items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:gap-2 sm:px-3",
+                      "relative flex shrink-0 snap-start items-center gap-1.5 px-2.5 text-sm whitespace-nowrap transition-[color,padding] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:gap-2 sm:px-3",
                       isActive
-                        ? "bg-transparent text-white hover:bg-transparent hover:text-white"
-                        : "bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        ? "z-[2] rounded-t-xl rounded-b-none py-1 font-semibold bg-transparent text-foreground hover:bg-transparent hover:text-foreground"
+                        : "z-[1] rounded-t-lg rounded-b-none py-1 font-medium bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />

@@ -226,3 +226,11 @@
     }
   }
 }
+
+/* Dark mode — active nav tab text/icons on light tab surface */
+.dark nav button.z-\[2\] {
+  color: #1c2833 !important;
+}
+.dark nav button.z-\[2\] svg {
+  color: #1c2833;
+}
