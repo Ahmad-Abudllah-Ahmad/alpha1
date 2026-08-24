@@ -145,6 +145,21 @@ export function TopNav({ active, onChange }: TopNavProps) {
   }, [active]);
 
   useEffect(() => {
+    const onWheel = (e: Event) => {
+      const we = e as WheelEvent;
+      if (we.ctrlKey || we.metaKey) we.preventDefault();
+    };
+    const header = document.querySelector("header.sticky.top-0");
+    const mobile = mobileSearchRef.current;
+    header?.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    mobile?.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    return () => {
+      header?.removeEventListener("wheel", onWheel, { capture: true });
+      mobile?.removeEventListener("wheel", onWheel, { capture: true });
+    };
+  }, []);
+
+  useEffect(() => {
     if (!showNotifications && !searchOpen) return;
 
     const onPointerDown = (event: PointerEvent) => {
