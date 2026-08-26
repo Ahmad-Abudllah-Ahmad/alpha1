@@ -95,9 +95,9 @@ export default function EstimationWorkspace() {
     const project = store.getProject(view.projectId);
     const floor = store.getFloor(view.projectId, view.floorId);
     return (
-      <ViewFade viewKey={`floor-${view.projectId}-${view.floorId}`} variant="tab">
-        <div className="flex min-h-[calc(100vh-12rem)] flex-col gap-2">
-          <div className="flex items-center gap-2 surface-card px-3 py-1.5">
+      <ViewFade viewKey={`floor-${view.projectId}-${view.floorId}`} variant="tab" className="flex h-full min-h-0 flex-1 flex-col">
+        <div className="flex h-full min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-center gap-2 border-b border-border/50 bg-background px-3 py-1.5">
             <Button
               variant="ghost"
               size="sm"
@@ -109,7 +109,7 @@ export default function EstimationWorkspace() {
             <span className="text-muted-foreground/60">/</span>
             <h2 className="font-bold tracking-tight text-foreground">{floor?.name || "Floor"}</h2>
           </div>
-          <OpenTakeoffEmbed className="relative min-h-[560px] flex-1 overflow-hidden rounded-xl border bg-neutral-950" />
+          <OpenTakeoffEmbed className="relative min-h-0 flex-1 overflow-hidden bg-[#dbe3e6] dark:bg-[#1a2332]" />
         </div>
       </ViewFade>
     );
@@ -117,7 +117,7 @@ export default function EstimationWorkspace() {
 
   if (view.kind === "project") {
     return (
-      <ViewFade viewKey={`project-${view.projectId}`} variant="tab">
+      <ViewFade viewKey={`project-${view.projectId}`} variant="tab" className="flex h-full min-h-0 flex-1 flex-col">
         <ProjectDetailView
           store={store}
           projectId={view.projectId}

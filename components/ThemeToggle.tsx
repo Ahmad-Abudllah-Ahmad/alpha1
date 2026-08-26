@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 function readDarkPreference(): boolean {
   if (typeof window === "undefined") return false;
@@ -30,23 +28,18 @@ export function ThemeToggle() {
   };
 
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
-      size="icon"
-      className={cn(
-        "h-9 w-9 shrink-0 rounded-full border-border/80 bg-background/90 shadow-xs",
-        "hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
-      )}
       onClick={toggle}
       title={dark ? "Switch to light mode" : "Switch to dark mode"}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      className="titleblock-tool"
     >
       {ready ? (
-        dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />
+        dark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />
       ) : (
-        <Moon className="h-4 w-4 opacity-50" />
+        <Moon className="h-3.5 w-3.5 opacity-50" />
       )}
-    </Button>
+    </button>
   );
 }

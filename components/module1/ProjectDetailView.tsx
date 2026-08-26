@@ -72,42 +72,42 @@ export function ProjectDetailView({ store, projectId, rates, onBack, onOpenFloor
   const floors = [...project.floors].sort((a, b) => a.levelIndex - b.levelIndex);
 
   return (
-    <div className="space-y-4">
-      {project.approvedAt && (
-        <div className="surface-card px-2.5 py-1.5">
-          <div className="flex min-w-0 items-center gap-2">
-            <Badge variant="success" className="gap-1 text-[9px]">
-              <ShieldCheck className="h-2.5 w-2.5" />
-              Approved {new Date(project.approvedAt).toLocaleDateString()}
-              {project.approvedBy ? ` · ${project.approvedBy}` : ""}
-            </Badge>
-          </div>
-        </div>
-      )}
-
-      {boq.uncalibratedFloors > 0 && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
-          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            <strong>{boq.uncalibratedFloors} floor{boq.uncalibratedFloors === 1 ? "" : "s"}</strong> with
-            takeoff data {boq.uncalibratedFloors === 1 ? "is" : "are"} not scaled yet. Open the floor and set the
-            drawing scale — measured areas and lengths are excluded from the estimate until then.
-          </span>
-        </div>
-      )}
-
+    <div className="flex h-full min-h-0 flex-col">
       {floors.length === 0 ? (
-        <Card>
-          <CardContent>
-            <UploadDropzone
-              backendUrl={store.settings.backendUrl}
-              title="Upload this project's floor plans"
-              onImported={(sheets) => store.addFloors(projectId, sheetsToFloors(sheets, 0))}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-3 p-4">
+          {project.approvedAt && (
+            <div className="surface-card px-2.5 py-1.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <Badge variant="success" className="gap-1 text-[9px]">
+                  <ShieldCheck className="h-2.5 w-2.5" />
+                  Approved {new Date(project.approvedAt).toLocaleDateString()}
+                  {project.approvedBy ? ` · ${project.approvedBy}` : ""}
+                </Badge>
+              </div>
+            </div>
+          )}
+          {boq.uncalibratedFloors > 0 && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-500">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                <strong>{boq.uncalibratedFloors} floor{boq.uncalibratedFloors === 1 ? "" : "s"}</strong> with
+                takeoff data {boq.uncalibratedFloors === 1 ? "is" : "are"} not scaled yet. Open the floor and set the
+                drawing scale — measured areas and lengths are excluded from the estimate until then.
+              </span>
+            </div>
+          )}
+          <Card>
+            <CardContent>
+              <UploadDropzone
+                backendUrl={store.settings.backendUrl}
+                title="Upload this project's floor plans"
+                onImported={(sheets) => store.addFloors(projectId, sheetsToFloors(sheets, 0))}
+              />
+            </CardContent>
+          </Card>
+        </div>
       ) : (
-        <OpenTakeoffEmbed className="relative min-h-[560px] w-full overflow-hidden rounded-xl border bg-neutral-950 lg:min-h-[calc(100dvh-5.25rem)]" />
+        <OpenTakeoffEmbed className="relative min-h-0 w-full flex-1 overflow-hidden bg-[#dbe3e6] dark:bg-[#1a2332]" />
       )}
 
       {/* Rate card & custom items editor */}

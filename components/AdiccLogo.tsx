@@ -7,22 +7,18 @@ interface AdiccLogoProps {
 }
 
 export function AdiccLogo({ className, variant = "header" }: AdiccLogoProps) {
+  const header = variant === "header";
+
   return (
-    <div
-      className={cn(
-        "flex items-center rounded-lg px-1 py-0.5 transition-opacity hover:opacity-90",
-        className
-      )}
-    >
+    <div className={cn("flex items-center", className)}>
       <Image
         src="/images/logos/adicc-logo.png"
         alt="ADICC — Since 1989"
-        width={variant === "banner" ? 120 : 130}
-        height={variant === "banner" ? 40 : 32}
+        width={header ? 88 : 120}
+        height={header ? 24 : 40}
         className={cn(
-          "w-auto object-contain",
-          variant === "banner" ? "h-10 sm:h-11" : "h-8 sm:h-9",
-          "dark:brightness-0 dark:invert"
+          "w-auto object-contain object-left",
+          header ? "h-6 brightness-0 invert" : "h-10 sm:h-11 dark:brightness-0 dark:invert"
         )}
         priority
       />
