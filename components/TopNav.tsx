@@ -35,6 +35,7 @@ type RecentProjectHit = {
 };
 
 type SubNavId = "tools" | "view";
+type CanvasPanelId = "files" | "summary" | "sheets" | "markup" | "stamp" | "rfi";
 type ToolbarId = "measure" | "workspace" | "takeoffs";
 type ToolbarStatus = Record<ToolbarId, { visible: boolean }>;
 type ViewId = "estimate" | "readout" | "minimap" | "rulers" | "grid" | "scaleBar";
@@ -44,6 +45,15 @@ type ExpandHint = "in" | "out";
 const SUB_NAV: { id: SubNavId; label: string }[] = [
   { id: "tools", label: "Tools" },
   { id: "view", label: "View" },
+];
+
+const CANVAS_PANEL_NAV: { id: CanvasPanelId; label: string }[] = [
+  { id: "files", label: "Files" },
+  { id: "summary", label: "Summary" },
+  { id: "sheets", label: "Sheets" },
+  { id: "markup", label: "Markups" },
+  { id: "stamp", label: "Stamps" },
+  { id: "rfi", label: "RFIs" },
 ];
 
 /** Canvas chrome controlled through the embedded OpenTakeoff message bridge. */
@@ -90,18 +100,11 @@ export function TopNav({ active, onChange }: TopNavProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [projectQuery, setProjectQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [recentProjects, setRecentProjects] = useState<RecentProjectHit[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = sessionStorage.getItem("adicc:recent-projects");
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
+  const [recentProjects, setRecentProjects] = useState<RecentProjectHit[]>([]);
   const [sheetsViewActive, setSheetsViewActive] = useState(false);
+  const [canvasUiReady, setCanvasUiReady] = useState(false);
   const [sheetInvert, setSheetInvert] = useState(false);
+  const [canvasPanelActive, setCanvasPanelActive] = useState<CanvasPanelId | null>(null);
   const [subNavActive, setSubNavActive] = useState<SubNavId | null>(null);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [toolsMenuPos, setToolsMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -109,10 +112,13 @@ export function TopNav({ active, onChange }: TopNavProps) {
   const [viewMenuPos, setViewMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [toolbarStatus, setToolbarStatus] = useState<ToolbarStatus>(DEFAULT_TOOLBAR_STATUS);
   const [viewStatus, setViewStatus] = useState<ViewStatus>(DEFAULT_VIEW_STATUS);
+  const viewStatusRef = useRef(viewStatus);
+  viewStatusRef.current = viewStatus;
   const [primaryCollapsed, setPrimaryCollapsed] = useState(false);
   const [expandHint, setExpandHint] = useState<ExpandHint | null>(null);
   const [menuVeilTop, setMenuVeilTop] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
+  const canvasPanelNavRef = useRef<HTMLDivElement>(null);
   const { role } = useRole();
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
   const visibleModules = modules.filter((m) => canViewModule(role, m.id));
@@ -151,6 +157,12 @@ export function TopNav({ active, onChange }: TopNavProps) {
   }, [onChange]);
 
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("adicc:recent-projects");
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) setRecentProjects(parsed);
+    } catch { /* private mode */ }
+
     const onList = (e: Event) => {
       const detail = (e as CustomEvent<RecentProjectHit[]>).detail;
       if (!Array.isArray(detail)) return;
@@ -171,18 +183,31 @@ export function TopNav({ active, onChange }: TopNavProps) {
     };
     const onHome = () => {
       setSheetsViewActive(false);
+      setCanvasUiReady(false);
+      setCanvasPanelActive(null);
       setPrimaryCollapsed(false);
     };
     const onInvertState = (e: Event) => {
       setSheetInvert(!!(e as CustomEvent<boolean>).detail);
     };
+    const onPanelState = (e: Event) => {
+      const panel = (e as CustomEvent<CanvasPanelId | null>).detail;
+      setCanvasPanelActive(CANVAS_PANEL_NAV.some((item) => item.id === panel) ? panel : null);
+    };
+    const onCanvasReady = (e: Event) => {
+      setCanvasUiReady(!!(e as CustomEvent<boolean>).detail);
+    };
     window.addEventListener("message", onMessage);
     window.addEventListener("adicc:opentakeoff-home", onHome);
     window.addEventListener("adicc:sheet-invert-state", onInvertState as EventListener);
+    window.addEventListener("adicc:canvas-panel-state", onPanelState as EventListener);
+    window.addEventListener("adicc:canvas-ready-state", onCanvasReady as EventListener);
     return () => {
       window.removeEventListener("message", onMessage);
       window.removeEventListener("adicc:opentakeoff-home", onHome);
       window.removeEventListener("adicc:sheet-invert-state", onInvertState as EventListener);
+      window.removeEventListener("adicc:canvas-panel-state", onPanelState as EventListener);
+      window.removeEventListener("adicc:canvas-ready-state", onCanvasReady as EventListener);
     };
   }, []);
 
@@ -215,6 +240,7 @@ export function TopNav({ active, onChange }: TopNavProps) {
         for (const id of ["estimate", "readout", "minimap", "rulers", "grid", "scaleBar"] as ViewId[]) {
           if (typeof detail[id] === "boolean") next[id] = detail[id];
         }
+        viewStatusRef.current = next;
         return next;
       });
     };
@@ -232,14 +258,18 @@ export function TopNav({ active, onChange }: TopNavProps) {
   useEffect(() => {
     if (active !== "estimation") {
       setSheetsViewActive(false);
+      setCanvasUiReady(false);
       setSheetInvert(false);
+      setCanvasPanelActive(null);
       setPrimaryCollapsed(false);
     }
   }, [active]);
 
   useEffect(() => {
     if (!sheetsViewActive) {
+      setCanvasUiReady(false);
       setSheetInvert(false);
+      setCanvasPanelActive(null);
       setSubNavActive(null);
       setToolsMenuOpen(false);
       setViewMenuOpen(false);
@@ -247,34 +277,64 @@ export function TopNav({ active, onChange }: TopNavProps) {
     }
   }, [sheetsViewActive]);
 
+  const closeCanvasPanelMenu = useCallback(() => {
+    setCanvasPanelActive(null);
+    window.dispatchEvent(new CustomEvent("adicc:canvas-subnav", {
+      detail: { action: "close-panel" },
+    }));
+  }, []);
+
   const closeChromeMenus = useCallback(() => {
     setToolsMenuOpen(false);
     setToolsMenuPos(null);
     setViewMenuOpen(false);
     setViewMenuPos(null);
     setSubNavActive(null);
-  }, []);
+    closeCanvasPanelMenu();
+  }, [closeCanvasPanelMenu]);
 
   const toggleToolsMenu = useCallback(() => {
     setViewMenuOpen(false);
     setViewMenuPos(null);
+    closeCanvasPanelMenu();
     setToolsMenuOpen((open) => {
       const next = !open;
       setSubNavActive(next ? "tools" : null);
       if (!next) setToolsMenuPos(null);
       return next;
     });
-  }, []);
+  }, [closeCanvasPanelMenu]);
 
   const toggleViewMenu = useCallback(() => {
     setToolsMenuOpen(false);
     setToolsMenuPos(null);
+    closeCanvasPanelMenu();
     setViewMenuOpen((open) => {
       const next = !open;
       setSubNavActive(next ? "view" : null);
       if (!next) setViewMenuPos(null);
       return next;
     });
+  }, [closeCanvasPanelMenu]);
+
+  const controlCanvasPanel = useCallback((panel: CanvasPanelId, trigger: HTMLButtonElement) => {
+    const rect = trigger.getBoundingClientRect();
+    const iframe = document.querySelector("[data-adicc-takeoff-iframe]") as HTMLIFrameElement | null;
+    const iframeLeft = iframe?.getBoundingClientRect().left ?? 0;
+    setToolsMenuOpen(false);
+    setToolsMenuPos(null);
+    setViewMenuOpen(false);
+    setViewMenuPos(null);
+    setSubNavActive(null);
+    setCanvasPanelActive((current) => current === panel ? null : panel);
+    window.dispatchEvent(new CustomEvent("adicc:canvas-subnav", {
+      detail: {
+        action: panel,
+        presentation: "menu",
+        anchorLeft: Math.round(rect.left - iframeLeft),
+        anchorWidth: Math.round(rect.width),
+      },
+    }));
   }, []);
 
   const controlToolbar = useCallback((tool: ToolbarId) => {
@@ -289,9 +349,12 @@ export function TopNav({ active, onChange }: TopNavProps) {
   }, [closeChromeMenus]);
 
   const controlView = useCallback((view: ViewId) => {
-    setViewStatus((current) => ({ ...current, [view]: !current[view] }));
+    const enabled = !viewStatusRef.current[view];
+    const next = { ...viewStatusRef.current, [view]: enabled };
+    viewStatusRef.current = next;
+    setViewStatus(next);
     window.dispatchEvent(new CustomEvent("adicc:view-control", {
-      detail: { view, action: "toggle" },
+      detail: { view, action: "set", enabled },
     }));
     closeChromeMenus();
   }, [closeChromeMenus]);
@@ -424,6 +487,9 @@ export function TopNav({ active, onChange }: TopNavProps) {
       if (viewMenuOpen && !viewMenuRef.current?.contains(target) && !viewDropdownRef.current?.contains(target)) {
         closeChromeMenus();
       }
+      if (canvasPanelActive && !canvasPanelNavRef.current?.contains(target)) {
+        closeCanvasPanelMenu();
+      }
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -431,6 +497,7 @@ export function TopNav({ active, onChange }: TopNavProps) {
         setShowNotifications(false);
         if (searchOpen) setSearchOpen(false);
         if (toolsMenuOpen || viewMenuOpen) closeChromeMenus();
+        if (canvasPanelActive) closeCanvasPanelMenu();
         if (primaryCollapsed) {
           setPrimaryCollapsed(false);
           window.dispatchEvent(new CustomEvent("adicc:canvas-expand-control", {
@@ -452,7 +519,16 @@ export function TopNav({ active, onChange }: TopNavProps) {
       window.removeEventListener("adicc:host-pointer-down", onHostPointer);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [closeChromeMenus, showNotifications, searchOpen, toolsMenuOpen, viewMenuOpen, primaryCollapsed]);
+  }, [
+    closeChromeMenus,
+    closeCanvasPanelMenu,
+    canvasPanelActive,
+    showNotifications,
+    searchOpen,
+    toolsMenuOpen,
+    viewMenuOpen,
+    primaryCollapsed,
+  ]);
 
   return (
     <>
@@ -591,13 +667,27 @@ export function TopNav({ active, onChange }: TopNavProps) {
               <RoleSwitcher />
             </div>
         </nav>
-        {active === "estimation" && sheetsViewActive && (
+        {active === "estimation" && sheetsViewActive && canvasUiReady && (
           <nav
-            className="titleblock-sub"
+            className="titleblock-sub is-canvas-ready"
             aria-label="Secondary"
-            aria-hidden={primaryCollapsed || undefined}
           >
             <div className="titleblock-sub-nav">
+              <div ref={canvasPanelNavRef} className="titleblock-sub-section" aria-label="Project desk">
+                {CANVAS_PANEL_NAV.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={cn("titleblock-sub-link", canvasPanelActive === item.id && "is-on")}
+                    aria-pressed={canvasPanelActive === item.id}
+                    onClick={(event) => controlCanvasPanel(item.id, event.currentTarget)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <span className="titleblock-sub-divider" aria-hidden="true" />
+              <div className="titleblock-sub-section" aria-label="Canvas controls">
               {SUB_NAV.map((item) => (
                 <div
                   key={item.id}
@@ -620,6 +710,7 @@ export function TopNav({ active, onChange }: TopNavProps) {
                   </button>
                 </div>
               ))}
+              </div>
             </div>
             <div className="titleblock-sub-tools">
               <div className="relative" ref={searchRef}>

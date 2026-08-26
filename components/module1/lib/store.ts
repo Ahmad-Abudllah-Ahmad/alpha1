@@ -20,12 +20,10 @@ export interface AiSettings {
 }
 
 export const DEFAULT_SETTINGS: AiSettings = {
-  // Default to the Python backend for accuracy; runTakeoff falls back to the
-  // in-browser engine automatically if the backend is unreachable.
-  engine: "api",
-  // In production (Vercel), set NEXT_PUBLIC_BACKEND_URL to the deployed
-  // backend's public URL (e.g. Render). Falls back to localhost for local dev.
-  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000",
+  // The backend is optional. Do not probe an assumed localhost service on
+  // every page load; opt into API mode by configuring its public URL.
+  engine: process.env.NEXT_PUBLIC_BACKEND_URL ? "api" : "local",
+  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || "",
   rateOverrides: { materials: {} },
   customMaterials: [],
 };
@@ -39,7 +37,12 @@ function loadSettings(): AiSettings {
   try {
     const raw = window.localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    const stored = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } as AiSettings;
+    const legacyLocalBackend = /^http:\/\/(?:localhost|127\.0\.0\.1):8000\/?$/i.test(stored.backendUrl);
+    if (!process.env.NEXT_PUBLIC_BACKEND_URL && legacyLocalBackend) {
+      return { ...stored, engine: "local", backendUrl: "" };
+    }
+    return stored;
   } catch {
     return DEFAULT_SETTINGS;
   }

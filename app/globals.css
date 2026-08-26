@@ -136,24 +136,35 @@
     z-index: 90;
   }
 
-  /* Expand = true canvas fullscreen: hide the whole ADICC chrome (primary + Tools/View). */
+  /* Expanded takeoff: hide the primary plate, keep the project/control bar. */
   .titleblock-nav.is-canvas-expanded {
-    position: absolute;
+    position: relative;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1;
-    height: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden;
-    pointer-events: none;
+    z-index: 20;
+    height: 2.475rem !important;
+    max-height: 2.475rem !important;
+    overflow: visible;
+    pointer-events: auto;
     background: transparent !important;
     background-image: none !important;
     box-shadow: none !important;
   }
-  .titleblock-nav.is-canvas-expanded .titleblock-plate,
-  .titleblock-nav.is-canvas-expanded .titleblock-sub {
+  .titleblock-nav.is-canvas-expanded .titleblock-plate {
     display: none !important;
+  }
+  .titleblock-nav.is-canvas-expanded .titleblock-sub {
+    display: flex !important;
+  }
+  .titleblock-nav.is-canvas-expanded + .canvas-expand-hint {
+    top: calc(2.475rem + 14px);
+  }
+
+  /* While the canvas owns measure-rail drag, keep any leftover expand class inert. */
+  html.is-measure-rail-dragging,
+  html.is-measure-rail-dragging body {
+    overflow: hidden;
   }
 
   /* Ink rule — the whole header is ADICC's steel scale laid across the sheet. */
@@ -235,6 +246,22 @@
     border-bottom: 1px solid rgb(0 90 112 / 0.18);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
   }
+  .titleblock-sub.is-canvas-ready {
+    animation: titleblock-sub-ready 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: top center;
+  }
+  @keyframes titleblock-sub-ready {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -100%, 0);
+      clip-path: inset(0 0 100% 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+      clip-path: inset(0);
+    }
+  }
   .dark .titleblock-sub {
     background-color: #102027;
     background-image:
@@ -249,6 +276,11 @@
     border-bottom-color: rgb(196 165 116 / 0.22);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   }
+  @media (prefers-reduced-motion: reduce) {
+    .titleblock-sub.is-canvas-ready {
+      animation: none;
+    }
+  }
 
   .titleblock-sub-tools {
     display: flex;
@@ -259,9 +291,34 @@
 
   .titleblock-sub-nav {
     display: flex;
+    flex: 1 1 auto;
     align-items: center;
     gap: 0.15rem;
     min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .titleblock-sub-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .titleblock-sub-section {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .titleblock-sub-divider {
+    flex: 0 0 auto;
+    width: 1px;
+    height: 1rem;
+    margin: 0 0.35rem;
+    background: rgb(0 90 112 / 0.2);
+  }
+  .dark .titleblock-sub-divider {
+    background: rgb(244 241 234 / 0.18);
   }
 
   .titleblock-sub-link {
@@ -279,7 +336,22 @@
     letter-spacing: 0.04em;
     text-transform: none;
     white-space: nowrap;
-    transition: color 180ms ease;
+    transition: color 180ms ease, font-weight 180ms ease;
+  }
+  .titleblock-sub-link::after {
+    content: "";
+    position: absolute;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0;
+    height: 2px;
+    background: #c4a574;
+    transform: scaleX(0);
+    transform-origin: center;
+    opacity: 0;
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 180ms ease;
   }
   .titleblock-sub-link:hover {
     color: #005a70;
@@ -291,13 +363,8 @@
   }
   .titleblock-sub-link.is-on::after,
   .titleblock-sub-link[aria-current="page"]::after {
-    content: "";
-    position: absolute;
-    left: 0.85rem;
-    right: 0.85rem;
-    bottom: 0;
-    height: 2px;
-    background: #c4a574;
+    transform: scaleX(1);
+    opacity: 1;
   }
   .titleblock-sub-link:focus-visible {
     outline: none;

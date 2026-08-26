@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { themeCookieValue, writeThemeCookie } from "@/lib/themeCookie";
 
 function readDarkPreference(): boolean {
   if (typeof window === "undefined") return false;
@@ -14,7 +15,10 @@ export function ThemeToggle() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setDark(readDarkPreference());
+    const isDark = readDarkPreference();
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+    writeThemeCookie(themeCookieValue(isDark));
     setReady(true);
   }, []);
 
@@ -22,8 +26,9 @@ export function ThemeToggle() {
     const next = !dark;
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
-    const theme = next ? "dark" : "light";
+    const theme = themeCookieValue(next);
     localStorage.setItem("adicc-theme", theme);
+    writeThemeCookie(theme);
     window.dispatchEvent(new CustomEvent("adicc:theme", { detail: theme }));
   };
 
