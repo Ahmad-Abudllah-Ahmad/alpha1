@@ -14,9 +14,9 @@ export interface ContractsSettings {
 }
 
 export const DEFAULT_CONTRACTS_SETTINGS: ContractsSettings = {
-  // In production (Vercel), set NEXT_PUBLIC_BACKEND_URL to the deployed
-  // backend's public URL (e.g. Render). Falls back to localhost for local dev.
-  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000",
+  // The contracts backend is optional. An empty URL keeps the UI offline
+  // without repeatedly probing an assumed localhost service.
+  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || "",
   kbExpanded: true,
   lastContractId: null,
 };
@@ -26,7 +26,11 @@ function loadSettings(): ContractsSettings {
   try {
     const raw = window.localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_CONTRACTS_SETTINGS;
-    return { ...DEFAULT_CONTRACTS_SETTINGS, ...JSON.parse(raw) };
+    const stored = { ...DEFAULT_CONTRACTS_SETTINGS, ...JSON.parse(raw) } as ContractsSettings;
+    const legacyLocalBackend = /^http:\/\/(?:localhost|127\.0\.0\.1):8000\/?$/i.test(stored.backendUrl);
+    return !process.env.NEXT_PUBLIC_BACKEND_URL && legacyLocalBackend
+      ? { ...stored, backendUrl: "" }
+      : stored;
   } catch {
     return DEFAULT_CONTRACTS_SETTINGS;
   }

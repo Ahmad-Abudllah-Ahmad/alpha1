@@ -189,7 +189,7 @@ export function useLiveRates(
 
   const load = useCallback(
     async (force: boolean) => {
-      if (inFlight.current) return;
+      if (!backendUrl.trim() || inFlight.current) return;
       inFlight.current = true;
       setStatus("loading");
       setError(null);
@@ -215,7 +215,7 @@ export function useLiveRates(
       setCard(cached);
       setStatus("ready");
     }
-    void load(false);
+    if (backendUrl.trim()) void load(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backendUrl]);
 
