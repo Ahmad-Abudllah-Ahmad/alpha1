@@ -30,6 +30,7 @@ function fromApiDocument(d: any): ContractDocument {
 }
 
 export async function checkBackend(backendUrl: string): Promise<boolean> {
+  if (!backendUrl.trim()) return false;
   try {
     const res = await fetch(`${base(backendUrl)}/contracts/health`, { signal: AbortSignal.timeout(4000) });
     if (!res.ok) return false;

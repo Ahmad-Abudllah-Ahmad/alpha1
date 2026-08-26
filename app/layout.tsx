@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
+import { cookies } from "next/headers";
+import { THEME_COOKIE } from "@/lib/themeCookie";
 import "./globals.css";
 
 const inter = Inter({
@@ -22,20 +25,31 @@ export const metadata: Metadata = {
   },
 };
 
-/** Runs before paint so dark/light matches localStorage and avoids flash. */
-const themeInitScript = `(function(){try{var t=localStorage.getItem('adicc-theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
+/**
+ * Runs before paint. Only mutates `<html class>` when localStorage/OS disagrees
+ * with the server cookie render — avoids React #418 hydration mismatch on repeat
+ * loads while still preventing a theme flash on first visit.
+ */
+const themeInitScript = `(function(){try{var t=localStorage.getItem('adicc-theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);var root=document.documentElement;var hasDark=root.classList.contains('dark');if(d!==hasDark)root.classList.toggle('dark',d);document.cookie='${THEME_COOKIE}='+(d?'dark':'light')+';path=/;max-age=31536000;SameSite=Lax';}catch(e){}})();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get(THEME_COOKIE)?.value;
+  const htmlClass = [
+    inter.variable,
+    themeCookie === "dark" ? "dark" : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
-      <body className="antialiased">
+    <html lang="en" suppressHydrationWarning className={htmlClass || undefined}>
+      <body suppressHydrationWarning className="antialiased">
+        <Script id="adicc-theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         {children}
       </body>
     </html>

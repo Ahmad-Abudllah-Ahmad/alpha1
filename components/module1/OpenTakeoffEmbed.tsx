@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+type CanvasPanelId = "files" | "summary" | "sheets" | "markup" | "stamp" | "rfi";
+const CANVAS_PANEL_IDS: CanvasPanelId[] = ["files", "summary", "sheets", "markup", "stamp", "rfi"];
+
 function readPlatformTheme(): "dark" | "light" {
   if (typeof window === "undefined") return "dark";
   try {
@@ -78,9 +81,6 @@ export function OpenTakeoffEmbed({
       if (expandedRef.current === active) return;
       expandedRef.current = active;
       applyExpandedClass(active);
-      if (document.fullscreenElement) {
-        void document.exitFullscreen();
-      }
       publishExpandState(active);
     };
     const onTheme = (e: Event) => {
@@ -102,9 +102,30 @@ export function OpenTakeoffEmbed({
       postToIframe({ type: "adicc:sheet-invert-toggle" });
     };
     const onSubNav = (e: Event) => {
-      const action = (e as CustomEvent<string>).detail;
-      if (action === "files" || action === "tools" || action === "view") {
-        postToIframe({ type: "adicc:canvas-subnav", action });
+      const detail = (e as CustomEvent<string | {
+        action?: string;
+        presentation?: "menu";
+        anchorLeft?: number;
+        anchorWidth?: number;
+      }>).detail;
+      const payload = typeof detail === "string"
+        ? { action: detail }
+        : (detail && typeof detail === "object" ? detail : null);
+      const action = payload?.action;
+      if (!action) return;
+      if (
+        CANVAS_PANEL_IDS.includes(action as CanvasPanelId)
+        || action === "tools"
+        || action === "view"
+        || action === "close-panel"
+      ) {
+        postToIframe({
+          type: "adicc:canvas-subnav",
+          action,
+          presentation: payload.presentation,
+          anchorLeft: payload.anchorLeft,
+          anchorWidth: payload.anchorWidth,
+        });
       }
     };
     const onToolbarControl = (e: Event) => {
@@ -118,7 +139,8 @@ export function OpenTakeoffEmbed({
     const onViewControl = (e: Event) => {
       const detail = (e as CustomEvent<{
         view?: "estimate" | "readout" | "minimap" | "rulers" | "grid" | "scaleBar";
-        action?: "toggle" | "request-state";
+        action?: "set" | "toggle" | "request-state";
+        enabled?: boolean;
       }>).detail;
       if (!detail?.action) return;
       postToIframe({ type: "adicc:view-control", ...detail });
@@ -132,6 +154,7 @@ export function OpenTakeoffEmbed({
       postToIframe({ type: "adicc:request-project-list" });
       postToIframe({ type: "adicc:toolbar-control", action: "request-state" });
       postToIframe({ type: "adicc:view-control", action: "request-state" });
+      postToIframe({ type: "adicc:canvas-subnav", action: "request-panel-state" });
     };
 
     const onMessage = (e: MessageEvent) => {
@@ -152,6 +175,15 @@ export function OpenTakeoffEmbed({
       }
       if (d.type === "adicc:view-state" && d.views && typeof d.views === "object") {
         window.dispatchEvent(new CustomEvent("adicc:view-state", { detail: d.views }));
+      }
+      if (d.type === "adicc:canvas-panel-state") {
+        const panel = CANVAS_PANEL_IDS.includes(d.panel as CanvasPanelId) ? d.panel : null;
+        window.dispatchEvent(new CustomEvent("adicc:canvas-panel-state", { detail: panel }));
+      }
+      if (d.type === "adicc:canvas-ready-state") {
+        window.dispatchEvent(new CustomEvent("adicc:canvas-ready-state", {
+          detail: !!d.ready,
+        }));
       }
       if (d.type === "adicc:canvas-expand-state") {
         setHostExpanded(!!d.active);
@@ -200,6 +232,7 @@ export function OpenTakeoffEmbed({
       iframe?.removeEventListener("load", onLoad);
       expandedRef.current = false;
       applyExpandedClass(false);
+      document.documentElement.classList.remove("is-measure-rail-dragging");
     };
   }, [pushTheme, pushHome, postToIframe]);
 
@@ -215,6 +248,7 @@ export function OpenTakeoffEmbed({
         ref={iframeRef}
         title={title}
         src={src}
+        data-adicc-takeoff-iframe=""
         className="absolute inset-0 h-full w-full border-0 bg-transparent"
         allow="clipboard-read; clipboard-write; fullscreen"
       />

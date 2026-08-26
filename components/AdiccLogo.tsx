@@ -14,12 +14,13 @@ export function AdiccLogo({ className, variant = "header" }: AdiccLogoProps) {
       <Image
         src="/images/logos/adicc-logo.png"
         alt="ADICC — Since 1989"
-        width={header ? 88 : 120}
-        height={header ? 24 : 40}
+        width={428}
+        height={118}
         className={cn(
           "w-auto object-contain object-left",
           header ? "h-6 brightness-0 invert" : "h-10 sm:h-11 dark:brightness-0 dark:invert"
         )}
+        style={{ width: "auto" }}
         priority
       />
     </div>
