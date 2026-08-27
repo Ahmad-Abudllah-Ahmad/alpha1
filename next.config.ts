@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const TAKEOFF_ORIGIN = process.env.OPENTAKEOFF_ORIGIN || "http://127.0.0.1:5180";
+const TAKEOFF_ORIGIN = process.env.OPENTAKEOFF_ORIGIN || "http://127.0.0.1:5173";
 
 const nextConfig: NextConfig = {
   // Allow LAN devices (e.g. a colleague on the same Wi-Fi) to load /_next/*

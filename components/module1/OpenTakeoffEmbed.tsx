@@ -21,7 +21,7 @@ function buildTakeoffUrl(): string {
   // rewrite is for production same-origin embeds only.
   const fallback =
     process.env.NODE_ENV !== "production"
-      ? "http://127.0.0.1:5180/takeoff/"
+      ? "http://127.0.0.1:5173/takeoff/"
       : "/takeoff/";
   const base = fromEnv
     ? (fromEnv.endsWith("/") ? fromEnv : `${fromEnv}/`)
