@@ -63,6 +63,13 @@ const TOOLS_MENU_ITEMS = [
   { id: "takeoffs", label: "Takeoffs Drawer", shortcut: "Alt+Shift+3", code: "Digit3" },
 ] as const;
 
+type MeasureIconSize = "small" | "medium" | "large";
+const MEASURE_ICON_SIZES: { id: MeasureIconSize; label: string }[] = [
+  { id: "small", label: "Small" },
+  { id: "medium", label: "Medium" },
+  { id: "large", label: "Large" },
+];
+
 const DEFAULT_TOOLBAR_STATUS: ToolbarStatus = {
   measure: { visible: true },
   workspace: { visible: true },
@@ -111,6 +118,7 @@ export function TopNav({ active, onChange }: TopNavProps) {
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const [viewMenuPos, setViewMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [toolbarStatus, setToolbarStatus] = useState<ToolbarStatus>(DEFAULT_TOOLBAR_STATUS);
+  const [measureIconSize, setMeasureIconSize] = useState<MeasureIconSize>("small");
   const [viewStatus, setViewStatus] = useState<ViewStatus>(DEFAULT_VIEW_STATUS);
   const viewStatusRef = useRef(viewStatus);
   viewStatusRef.current = viewStatus;
@@ -226,6 +234,10 @@ export function TopNav({ active, onChange }: TopNavProps) {
         }
         return next;
       });
+      const iconSize = (detail.measure as { iconSize?: string } | undefined)?.iconSize;
+      if (iconSize === "small" || iconSize === "medium" || iconSize === "large") {
+        setMeasureIconSize(iconSize);
+      }
     };
     window.addEventListener("adicc:toolbar-state", onToolbarState as EventListener);
     return () => window.removeEventListener("adicc:toolbar-state", onToolbarState as EventListener);
@@ -347,6 +359,13 @@ export function TopNav({ active, onChange }: TopNavProps) {
     }));
     closeChromeMenus();
   }, [closeChromeMenus]);
+
+  const controlMeasureIconSize = useCallback((size: MeasureIconSize) => {
+    setMeasureIconSize(size);
+    window.dispatchEvent(new CustomEvent("adicc:toolbar-control", {
+      detail: { action: "set-measure-icon-size", size },
+    }));
+  }, []);
 
   const controlView = useCallback((view: ViewId) => {
     const enabled = !viewStatusRef.current[view];
@@ -805,20 +824,37 @@ export function TopNav({ active, onChange }: TopNavProps) {
           {TOOLS_MENU_ITEMS.map((option) => {
             const status = toolbarStatus[option.id];
             return (
-              <button
-                key={option.id}
-                type="button"
-                role="menuitemcheckbox"
-                className="titleblock-sub-menu-item"
-                aria-checked={status.visible}
-                onClick={() => controlToolbar(option.id)}
-              >
-                <span className="titleblock-sub-menu-check" aria-hidden="true">
-                  {status.visible ? <Check className="h-3.5 w-3.5" /> : null}
-                </span>
-                <span className="titleblock-sub-menu-label">{option.label}</span>
-                <kbd className="titleblock-sub-menu-shortcut">{option.shortcut}</kbd>
-              </button>
+              <div key={option.id}>
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  className="titleblock-sub-menu-item"
+                  aria-checked={status.visible}
+                  onClick={() => controlToolbar(option.id)}
+                >
+                  <span className="titleblock-sub-menu-check" aria-hidden="true">
+                    {status.visible ? <Check className="h-3.5 w-3.5" /> : null}
+                  </span>
+                  <span className="titleblock-sub-menu-label">{option.label}</span>
+                  <kbd className="titleblock-sub-menu-shortcut">{option.shortcut}</kbd>
+                </button>
+                {option.id === "measure" ? (
+                  <div className="titleblock-rail-size" role="group" aria-label="Measure rail icon size">
+                    {MEASURE_ICON_SIZES.map((size) => (
+                      <button
+                        key={size.id}
+                        type="button"
+                        className={cn("titleblock-rail-size-btn", measureIconSize === size.id && "is-on")}
+                        aria-pressed={measureIconSize === size.id}
+                        onClick={() => controlMeasureIconSize(size.id)}
+                      >
+                        <span className="titleblock-rail-size-mark" data-size={size.id} aria-hidden="true" />
+                        {size.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </div>
