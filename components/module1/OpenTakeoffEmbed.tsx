@@ -131,7 +131,8 @@ export function OpenTakeoffEmbed({
     const onToolbarControl = (e: Event) => {
       const detail = (e as CustomEvent<{
         tool?: "measure" | "workspace" | "takeoffs";
-        action?: "toggle-visible" | "request-state";
+        action?: "toggle-visible" | "request-state" | "set-measure-icon-size";
+        size?: "small" | "medium" | "large";
       }>).detail;
       if (!detail?.action) return;
       postToIframe({ type: "adicc:toolbar-control", ...detail });
