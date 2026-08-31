@@ -15,8 +15,6 @@ import {
   Check,
   ChevronLeft,
   Contrast,
-  Search,
-  X,
 } from "lucide-react";
 
 export type { ModuleId };
@@ -26,13 +24,6 @@ interface TopNavProps {
   active: ModuleId;
   onChange: (id: ModuleId) => void;
 }
-
-type RecentProjectHit = {
-  id: string;
-  name: string;
-  sheetCount?: number;
-  shapeCount?: number;
-};
 
 type SubNavId = "tools" | "view";
 type CanvasPanelId = "files" | "summary" | "sheets" | "markup" | "stamp" | "rfi";
@@ -97,17 +88,12 @@ const DEFAULT_VIEW_STATUS: ViewStatus = {
 export function TopNav({ active, onChange }: TopNavProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const toolsButtonRef = useRef<HTMLButtonElement>(null);
   const toolsDropdownRef = useRef<HTMLDivElement>(null);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const viewButtonRef = useRef<HTMLButtonElement>(null);
   const viewDropdownRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [projectQuery, setProjectQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [recentProjects, setRecentProjects] = useState<RecentProjectHit[]>([]);
   const [sheetsViewActive, setSheetsViewActive] = useState(false);
   const [canvasUiReady, setCanvasUiReady] = useState(false);
   const [sheetInvert, setSheetInvert] = useState(false);
@@ -131,31 +117,6 @@ export function TopNav({ active, onChange }: TopNavProps) {
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
   const visibleModules = modules.filter((m) => canViewModule(role, m.id));
 
-  const projectHits = recentProjects
-    .filter((p) => !projectQuery.trim() || p.name.toLowerCase().includes(projectQuery.trim().toLowerCase()))
-    .slice(0, 8);
-
-  const pushProjectSearch = useCallback((query: string) => {
-    window.dispatchEvent(new CustomEvent("adicc:project-search", { detail: query }));
-  }, []);
-
-  const clearSearch = useCallback(() => {
-    setSearchOpen(false);
-    setProjectQuery("");
-    pushProjectSearch("");
-  }, [pushProjectSearch]);
-
-  const openRecentProject = useCallback((p: RecentProjectHit) => {
-    setProjectQuery(p.name);
-    setSearchOpen(false);
-    onChange("estimation");
-    window.dispatchEvent(new CustomEvent("adicc:opentakeoff-home"));
-    // Allow Estimation iframe to mount / return home before opening.
-    window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("adicc:open-project", { detail: { id: p.id, name: p.name } }));
-    }, 220);
-  }, [onChange]);
-
   const goAllProjects = useCallback(() => {
     setSheetsViewActive(false);
     onChange("estimation");
@@ -163,25 +124,6 @@ export function TopNav({ active, onChange }: TopNavProps) {
       window.dispatchEvent(new CustomEvent("adicc:opentakeoff-home"));
     }, 220);
   }, [onChange]);
-
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("adicc:recent-projects");
-      const parsed = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) setRecentProjects(parsed);
-    } catch { /* private mode */ }
-
-    const onList = (e: Event) => {
-      const detail = (e as CustomEvent<RecentProjectHit[]>).detail;
-      if (!Array.isArray(detail)) return;
-      setRecentProjects(detail);
-      try {
-        sessionStorage.setItem("adicc:recent-projects", JSON.stringify(detail));
-      } catch { /* private mode */ }
-    };
-    window.addEventListener("adicc:project-list", onList as EventListener);
-    return () => window.removeEventListener("adicc:project-list", onList as EventListener);
-  }, []);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -493,13 +435,12 @@ export function TopNav({ active, onChange }: TopNavProps) {
   }, []);
 
   useEffect(() => {
-    if (!showNotifications && !searchOpen && !toolsMenuOpen && !viewMenuOpen && !primaryCollapsed) return;
+    if (!showNotifications && !toolsMenuOpen && !viewMenuOpen && !primaryCollapsed) return;
 
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (showNotifications && !notificationsRef.current?.contains(target)) setShowNotifications(false);
-      if (searchOpen && !searchRef.current?.contains(target)) setSearchOpen(false);
       if (toolsMenuOpen && !toolsMenuRef.current?.contains(target) && !toolsDropdownRef.current?.contains(target)) {
         closeChromeMenus();
       }
@@ -514,7 +455,6 @@ export function TopNav({ active, onChange }: TopNavProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setShowNotifications(false);
-        if (searchOpen) setSearchOpen(false);
         if (toolsMenuOpen || viewMenuOpen) closeChromeMenus();
         if (canvasPanelActive) closeCanvasPanelMenu();
         if (primaryCollapsed) {
@@ -543,7 +483,6 @@ export function TopNav({ active, onChange }: TopNavProps) {
     closeCanvasPanelMenu,
     canvasPanelActive,
     showNotifications,
-    searchOpen,
     toolsMenuOpen,
     viewMenuOpen,
     primaryCollapsed,
@@ -729,66 +668,6 @@ export function TopNav({ active, onChange }: TopNavProps) {
                   </button>
                 </div>
               ))}
-              </div>
-            </div>
-            <div className="titleblock-sub-tools">
-              <div className="relative" ref={searchRef}>
-                <div className="titleblock-sub-seek">
-                  <span className="titleblock-sub-seek-ico" aria-hidden="true">
-                    <Search className="h-3 w-3" />
-                  </span>
-                  <input
-                    ref={searchInputRef}
-                    value={projectQuery}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setProjectQuery(next);
-                      setSearchOpen(true);
-                      pushProjectSearch(next);
-                    }}
-                    onFocus={() => setSearchOpen(true)}
-                    placeholder="Find a project…"
-                    className="titleblock-sub-seek-input"
-                    aria-label="Search recent projects"
-                    aria-expanded={searchOpen && !!projectQuery.trim()}
-                    aria-haspopup="listbox"
-                  />
-                  {projectQuery.trim() ? (
-                    <button
-                      type="button"
-                      className="titleblock-sub-seek-clear"
-                      aria-label="Clear search"
-                      onClick={clearSearch}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  ) : null}
-                </div>
-                {searchOpen && projectQuery.trim() && (
-                  <div
-                    role="listbox"
-                    className="absolute right-0 top-10 z-50 w-[min(20rem,calc(100vw-1.5rem))] animate-in fade-in slide-in-from-top-2 rounded-xl border bg-card p-1.5 shadow-elevated duration-150"
-                  >
-                    {projectHits.length === 0 ? (
-                      <p className="px-2.5 py-3 text-center text-xs text-muted-foreground">No projects match</p>
-                    ) : (
-                      projectHits.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          role="option"
-                          onClick={() => openRecentProject(p)}
-                          className="flex w-full flex-col rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-primary/5"
-                        >
-                          <span className="truncate text-xs font-semibold text-foreground">{p.name}</span>
-                          <span className="mt-0.5 text-[10px] text-muted-foreground">
-                            {p.sheetCount || 0} sheets · {p.shapeCount || 0} items
-                          </span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           </nav>
