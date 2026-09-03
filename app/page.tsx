@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ModuleBanner } from '@/components/ModuleBanner';
 import { TopNav, type ModuleId } from '@/components/TopNav';
 import { RoleProvider } from '@/components/RoleProvider';
@@ -9,6 +10,7 @@ import { KnowledgeBaseProvider } from '@/components/KnowledgeBaseProvider';
 import { NotificationProvider } from '@/components/NotificationProvider';
 import { getModuleLoadingComponent } from '@/components/ui/skeleton';
 import { ViewFade } from '@/components/ui/view-fade';
+import { getSession } from '@/lib/auth/session';
 import { cn } from '@/lib/utils';
 
 const ExecutiveDashboard = dynamic(() => import('@/components/dashboard/ExecutiveDashboard'), { ssr: false, loading: getModuleLoadingComponent('dashboard') });
@@ -134,6 +136,29 @@ function AppContent() {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const session = await getSession();
+      if (cancelled) return;
+      if (!session) {
+        router.replace('/login');
+        return;
+      }
+      setAllowed(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  if (!allowed) {
+    return <div className="min-h-svh w-full bg-sidebar bg-ambient" />;
+  }
+
   return (
     <RoleProvider>
       <NotificationProvider>
