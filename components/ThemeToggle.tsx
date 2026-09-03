@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { themeCookieValue, writeThemeCookie } from "@/lib/themeCookie";
+import { cn } from "@/lib/utils";
 
 function readDarkPreference(): boolean {
   if (typeof window === "undefined") return false;
@@ -10,7 +11,7 @@ function readDarkPreference(): boolean {
   return stored === "dark" || (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const [dark, setDark] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -38,7 +39,7 @@ export function ThemeToggle() {
       onClick={toggle}
       title={dark ? "Switch to light mode" : "Switch to dark mode"}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className="titleblock-tool"
+      className={cn("titleblock-tool", className)}
     >
       {ready ? (
         dark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />
