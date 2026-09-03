@@ -1,0 +1,24 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "auth-page-ui",
+    "fix/host-canvas-integration",
+    "main",
+    "mustafa/project-isolation",
+    "ui/toolbar-sizing"
+  ],
+  "parent": {
+    "auth-page-ui": "main",
+    "fix/host-canvas-integration": "main",
+    "main": null,
+    "mustafa/project-isolation": "main",
+    "ui/toolbar-sizing": "main"
+  },
+  "order": [
+    "main",
+    "auth-page-ui",
+    "fix/host-canvas-integration",
+    "mustafa/project-isolation",
+    "ui/toolbar-sizing"
+  ]
+}
