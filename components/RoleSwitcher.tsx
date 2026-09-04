@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, LogOut } from "lucide-react";
+import AdiccLoadingLogo from "@/components/AdiccLoadingLogo";
 import { useRole } from "@/components/RoleProvider";
 import { type AuthSession, getSession, signOut } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ export function RoleSwitcher() {
   const { role, setRole } = useRole();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -110,9 +112,13 @@ export function RoleSwitcher() {
                 )}
                 onClick={() => {
                   setOpen(false);
+                  setSigningOut(true);
                   void (async () => {
-                    await signOut();
-                    window.location.assign("/login");
+                    try {
+                      await signOut();
+                    } finally {
+                      window.location.assign("/login");
+                    }
                   })();
                 }}
               >
@@ -163,6 +169,20 @@ export function RoleSwitcher() {
         />
       </button>
       {menu}
+      {signingOut
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[10060] flex items-center justify-center bg-background/85 backdrop-blur-sm"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+              aria-label="Signing out"
+            >
+              <AdiccLoadingLogo />
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

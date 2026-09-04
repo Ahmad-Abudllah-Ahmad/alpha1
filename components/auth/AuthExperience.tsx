@@ -12,6 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Barlow_Condensed } from "next/font/google";
 import { ArrowRight } from "lucide-react";
 import { AdiccLogo } from "@/components/AdiccLogo";
+import AdiccLoadingLogo from "@/components/AdiccLoadingLogo";
 import { AuthField } from "@/components/auth/AuthField";
 import { AuthSkyline } from "@/components/auth/AuthSkyline";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -44,6 +45,20 @@ const display = Barlow_Condensed({
 });
 
 type Mode = "login" | "register";
+
+function AuthLoadingOverlay({ label }: { label: string }) {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgb(0_47_58/0.72)] backdrop-blur-[2px] [--foreground:244_241_234] [--primary:196_165_116]"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label={label}
+    >
+      <AdiccLoadingLogo />
+    </div>
+  );
+}
 
 function modeFromPath(pathname: string): Mode {
   return pathname.includes("/register") ? "register" : "login";
@@ -150,8 +165,8 @@ export function AuthExperience() {
     setBusy(true);
     setLoginError("");
     const { session, error } = await signIn(trimmedEmail, loginPassword);
-    setBusy(false);
     if (error || !session) {
+      setBusy(false);
       showToast(AUTH_TOAST.invalidCredentials);
       return;
     }
@@ -192,8 +207,8 @@ export function AuthExperience() {
       trimmedEmail,
       regPassword,
     );
-    setBusy(false);
     if (error) {
+      setBusy(false);
       const already =
         errorCode === "user_already_exists" ||
         /already\s+registered|already\s+exists|user\s+already/i.test(error);
@@ -206,6 +221,7 @@ export function AuthExperience() {
       return;
     }
     if (needsConfirm) {
+      setBusy(false);
       clearRegisterDraft();
       setRegPassword("");
       setConfirmPassword("");
@@ -216,6 +232,7 @@ export function AuthExperience() {
       return;
     }
     if (!session) {
+      setBusy(false);
       setRegError("Registration failed.");
       return;
     }
@@ -226,7 +243,11 @@ export function AuthExperience() {
   };
 
   if (!ready) {
-    return <div className={cn(display.variable, "auth-gate min-h-svh w-full")} />;
+    return (
+      <div className={cn(display.variable, "auth-gate relative min-h-svh w-full overflow-hidden")}>
+        <AuthLoadingOverlay label="Checking session" />
+      </div>
+    );
   }
 
   return (
@@ -443,6 +464,7 @@ export function AuthExperience() {
       </div>
 
       <AuthSkyline className="auth-skyline pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[9.5rem] w-full sm:h-[11rem] lg:h-[13rem]" />
+      {busy ? <AuthLoadingOverlay label={mode === "login" ? "Signing in" : "Creating account"} /> : null}
       <AuthToast message={toast} onDismiss={() => setToast(null)} />
       {/* Keep Link for crawlability; UI uses buttons above */}
       <Link href="/login" className="sr-only">
