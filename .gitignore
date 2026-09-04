@@ -15,10 +15,6 @@ yarn-error.log*
 Thumbs.db
 
 # Environment
-.env
-.env.local
-.env.development
-.env.production
 
 # Misc
 *.tmp
@@ -28,3 +24,7 @@ Thumbs.db
 # Backend — local knowledge base (SQLite DB + uploaded contract/reference files)
 backend/data/
 backend/.venv/
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+config.bat
