@@ -240,9 +240,6 @@ export function AuthExperience() {
       <header className="relative z-20 flex items-center justify-between px-5 py-4 sm:px-8 lg:px-10">
         <AdiccLogo variant="header" className="[&_img]:h-7 sm:[&_img]:h-8" />
         <div className="flex items-center gap-3">
-          <span className="hidden text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--ink-paper)]/50 sm:inline">
-            Site access · {mode === "login" ? "A.01" : "A.02"}
-          </span>
           <ThemeToggle />
         </div>
       </header>
@@ -315,18 +312,6 @@ export function AuthExperience() {
             <section className="auth-pass relative">
               <div className="auth-pass-body">
                 <div className="auth-pass-meta">
-                  <div className="auth-pass-badge" aria-hidden="true">
-                    <span>AD</span>
-                    <small>89</small>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                      Folder · {mode === "login" ? "A.01" : "A.02"}
-                    </p>
-                    <p className="mt-1 truncate text-sm font-semibold text-foreground">
-                      {mode === "login" ? "Returning estimator" : "New desk seat"}
-                    </p>
-                  </div>
                   <AdiccLogo variant="banner" className="hidden shrink-0 sm:block [&_img]:h-7" />
                 </div>
 
