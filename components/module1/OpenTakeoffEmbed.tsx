@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 type CanvasPanelId = "files" | "summary" | "sheets" | "markup" | "stamp" | "rfi";
 const CANVAS_PANEL_IDS: CanvasPanelId[] = ["files", "summary", "sheets", "markup", "stamp", "rfi"];
@@ -58,6 +59,23 @@ export function OpenTakeoffEmbed({
     if (!win) return;
     win.postMessage({ source: "adicc-platform", ...payload }, "*");
   }, []);
+
+  const pushSupabaseSession = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      postToIframe({
+        type: "adicc:supabase-session",
+        session: {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        },
+      });
+    } catch {
+      /* auth not configured */
+    }
+  }, [postToIframe]);
 
   const pushTheme = useCallback((theme: "dark" | "light") => {
     postToIframe({ type: "adicc:theme", theme });
@@ -152,6 +170,7 @@ export function OpenTakeoffEmbed({
     };
     const onLoad = () => {
       pushTheme(readPlatformTheme());
+      void pushSupabaseSession();
       postToIframe({ type: "adicc:request-project-list" });
       postToIframe({ type: "adicc:toolbar-control", action: "request-state" });
       postToIframe({ type: "adicc:view-control", action: "request-state" });
@@ -161,6 +180,9 @@ export function OpenTakeoffEmbed({
     const onMessage = (e: MessageEvent) => {
       const d = e.data;
       if (!d || d.source !== "opentakeoff") return;
+      if (d.type === "adicc:request-supabase-session") {
+        void pushSupabaseSession();
+      }
       if (d.type === "adicc:project-list" && Array.isArray(d.projects)) {
         try {
           sessionStorage.setItem("adicc:recent-projects", JSON.stringify(d.projects));
@@ -235,7 +257,7 @@ export function OpenTakeoffEmbed({
       applyExpandedClass(false);
       document.documentElement.classList.remove("is-measure-rail-dragging");
     };
-  }, [pushTheme, pushHome, postToIframe]);
+  }, [pushTheme, pushHome, postToIframe, pushSupabaseSession]);
 
   return (
     <div
