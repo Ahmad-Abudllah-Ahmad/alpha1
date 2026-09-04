@@ -177,6 +177,17 @@ export function OpenTakeoffEmbed({
       postToIframe({ type: "adicc:canvas-subnav", action: "request-panel-state" });
     };
 
+    let authUnsubscribe: (() => void) | undefined;
+    try {
+      const supabase = createClient();
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+        void pushSupabaseSession();
+      });
+      authUnsubscribe = () => subscription.unsubscribe();
+    } catch {
+      /* auth not configured */
+    }
+
     const onMessage = (e: MessageEvent) => {
       const d = e.data;
       if (!d || d.source !== "opentakeoff") return;
@@ -253,6 +264,7 @@ export function OpenTakeoffEmbed({
       window.removeEventListener("message", onMessage);
       window.removeEventListener("popstate", onPopState);
       iframe?.removeEventListener("load", onLoad);
+      authUnsubscribe?.();
       expandedRef.current = false;
       applyExpandedClass(false);
       document.documentElement.classList.remove("is-measure-rail-dragging");
