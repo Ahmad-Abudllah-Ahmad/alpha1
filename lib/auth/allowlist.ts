@@ -11,6 +11,8 @@ export const ALLOWED_AUTH_EMAILS = [
   "amr.h@adicc-uae.com",
   "tooba@sparkai.ae",
   "itsadildev@gmail.com",
+  "mustafasubhani001@gmail.com",
+  "ar88842@gmail.com",
 ] as const;
 
 const ALLOWED_SET = new Set(
